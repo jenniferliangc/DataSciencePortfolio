@@ -1,0 +1,279 @@
+## I take different data sets, permute the data and the desired statistic to compute the p-values and reject or accept the null hypothesis for the different scenarios.
+
+## Part I: Permutation Tests
+
+``` {r, message = FALSE}
+library(tidyverse)
+library(stat20data)
+library(infer)
+data(yawn)
+data(promote)
+data(millennials)
+data(curry)
+```
+
+1. Does seeing someone yawn cause you to yawn?
+
+a. Null hypothesis: receiving the stimulus of seeing someone yawning does NOT cause you to yawn; "There is no effect."
+Alternative hypothesis: receiving the stimulus of seeing someone yawning does cause you to yawn; "There is an effect"
+
+b. Calculating the difference in proportions between those who received and didn't receive the stimulus.
+``` {r, message = FALSE}
+obs_stat <- yawn %>%
+  specify (response = response,
+          explanatory = group,
+          success = "yawn") %>% 
+  calculate (stat = "diff in props")
+obs_stat
+```
+
+c. Graphing the response between those who received and didn't receive the stimulus and whether they yawned or not.
+``` {R}
+yawn %>%
+  ggplot(aes(x=response, fill=group)) +
+  geom_bar(position=position_dodge())
+```
+
+d. Permuting the data and creating graphs based on this permuted data
+```{r}
+yawn %>%
+  specify (response = response,
+          explanatory = group,
+          success = "yawn") %>%
+  hypothesize(null = "independence") %>%
+  generate(reps = 9,
+           type = "permute") %>%
+  ggplot(aes(x=response,fill=group)) +
+  geom_bar(position=position_dodge()) +
+  facet_wrap(vars(replicate))
+```
+
+e. Calculating the "difference in proportions" in 500 permutations
+``` {r, message = FALSE}
+saved_permutated_yawn <- yawn %>%
+  specify (response = response,
+           explanatory = group,
+           success = "yawn") %>%
+  hypothesize(null = "independence") %>%
+  generate(reps = 500,
+           type = "permute") %>%
+  calculate(stat = "diff in props")
+
+saved_permutated_yawn
+```
+
+f. Visualizing the p-value for the 500 difference in proportions permutations
+``` {r}
+saved_permutated_yawn %>%
+  visualize() +
+    shade_pvalue(obs_stat = obs_stat,
+               direction = "both")
+```
+
+g. Computing the p-value
+``` {r}
+saved_permutated_yawn %>% 
+  get_p_value(obs_stat = obs_stat,
+              direction = "both")
+
+```
+
+h. Our computed p-value is ~1, which is greater than 0.05. Therefore, our data is consistent with the null hypothesis that receiving the stimulus of seeing someone yawning does NOT cause you to yawn. We fail to reject the null hypothesis.
+
+
+2. Do women get less promotios that men?
+
+a. Null hypothesis: there is NO association between gender and promotion decisions. We can also say that promotion and gender are independent.
+Alternative hypothesis: there is an association between gender and promotion decisions. We can also say that promotion and gender are dependent.
+
+b. Calculating the difference in proportions between male and females who were promoted.
+```{r}
+obs_stat_promote <- promote %>%
+  specify (response = decision,
+          explanatory = gender,
+          success = "promote") %>%
+  calculate (stat = "diff in props")
+
+obs_stat_promote
+```
+
+c. Graphing the difference in promotions between male and females who were and were not promoted.
+``` {r}
+promote %>%
+  ggplot(aes(x=gender, fill=decision)) +
+  geom_bar(position=position_dodge())
+```
+
+d. Creating 9 different permutations and visualizing them
+```{r}
+promote %>%
+  specify (response = decision,
+          explanatory = gender,
+          success = "promote") %>%
+  hypothesize(null = "independence") %>%
+  generate(reps = 9,
+           type = "permute") %>%
+  ggplot(aes(x=gender,fill=decision)) +
+  geom_bar(position=position_dodge()) +
+  facet_wrap(vars(replicate))
+```
+
+e. Calculating the "difference in proportions" in 500 permutations
+``` {r, message = FALSE}
+saved_permutated_promote <- promote %>%
+  specify (response = decision,
+           explanatory = gender,
+           success = "promote") %>%
+  hypothesize(null = "independence") %>%
+  generate(reps = 500,
+           type = "permute") %>%
+  calculate(stat = "diff in props")
+
+saved_permutated_promote
+```
+
+f. Visualizing the p-value for the 500 permutations
+``` {r}
+saved_permutated_promote %>%
+  visualize() +
+    shade_pvalue(obs_stat = obs_stat_promote,
+               direction = "both")
+```
+
+g. Computing the p-value
+``` {r}
+saved_permutated_promote %>% 
+  get_p_value(obs_stat = obs_stat_promote,
+              direction = "both")
+```
+
+h. We can reject our null hypothesis given that the observed data gave us a p-value ~0.028, which is less than 0.05. Therefore, our data is inconsistent with the null hypothesis that there is NO association between gender and promotion decisions. *NOTE: p-value varies each time the code runs but is generally less than 0.05
+
+3. Do millennials support same sex marriage at the same rate as most Americans?
+
+a. Null hypothesis: millennials support same sex marriage at the same rate of most Americans.
+Alternative hypothesis: millennials do NOT support same sex marriage at the same rate of most Americans
+
+b. Calculating the proportion of millenials who "favor" marriage
+```{r}
+obs_stat_millennials <- millennials %>%
+  specify (response = response,
+          success = "favor") %>%
+  calculate (stat = "prop")
+
+obs_stat_millennials
+```
+
+
+c. Visualizing the count of how many millennials favor or do not favor marriage
+```{r}
+millennials %>%
+  ggplot(aes(x=response, fill=response)) +
+  geom_bar()
+```
+d. Drawing 9 times and creating visualizations for each of them.
+```{r}
+millennials %>%
+  specify (response = response,
+          success = "favor") %>%
+  hypothesize(null = "point",
+              p = .5) %>%
+  generate(reps = 9,
+           type = "draw") %>%
+  ggplot(aes(x=response,fill=response)) +
+  geom_bar() +
+  facet_wrap(vars(replicate))
+```
+e. Calculating the "difference in proportions" in 500 draws
+```{r}
+null <- millennials %>%
+  specify(response = response,
+          success = "favor") %>%
+  hypothesize(null = "point",
+              p = .5) %>%
+  generate(reps = 500,
+           type = "draw") %>%
+  calculate(stat = "prop")
+
+null
+```
+
+f. Visualizing the p-value for the 500 draws
+```{r}
+null %>%
+  visualize() +
+   shade_pvalue(obs_stat = obs_stat_millennials,
+               direction = "both")
+```
+g. Computing the p-value
+``` {r}
+null  %>% 
+  get_p_value(obs_stat = obs_stat_millennials,
+              direction = "both")
+```
+h. We got a p-value = ~0. Therefore, our data is inconsistent with the null hypothesis that Millennials support same sex marriage at the same rate as Americans in general. We reject the null hypothesis that p = .5 at an alpha level = 0.05
+
+4. Is Steph Curry shooting range the same as the average NBA player?
+
+a. Null hypothesis: Steph Curry has a long range shooting percentage of 0.075, which is the same as the average NBA player.
+Alternative hypothesis: Steph Curry has a long range shooting percentage different from 0.075, which is different from the average NBA player.
+
+b. Calculating the proportion of times that Steph Curry hit or missed a shot
+```{r}
+obs_stat_curry <- curry %>%
+  specify (response = shot,
+          success = "hit") %>%
+  calculate (stat = "prop")
+
+obs_stat_curry
+```
+
+c. Graphing the proportions of hits and misses
+
+```{r}
+curry %>%
+  ggplot(aes(x=shot, fill=shot)) +
+  geom_bar()
+```
+
+d. Drawing 9 times and visualizing each of them
+```{r}
+curry %>%
+  specify (response = shot,
+          success = "hit") %>%
+  hypothesize(null = "point",
+              p = 0.075) %>%
+  generate(reps = 9,
+           type = "draw") %>%
+  ggplot(aes(x=shot,fill=shot)) +
+  geom_bar() +
+  facet_wrap(vars(replicate))
+```
+e. Calculating the proportion for each of the 500 draws
+```{r}
+null_curry <- curry %>%
+  specify(response = shot,
+          success = "hit") %>%
+  hypothesize(null = "point",
+              p = 0.075) %>%
+  generate(reps = 500,
+           type = "draw") %>%
+  calculate(stat = "prop")
+
+null_curry
+```
+f. Visualizing the p-value for all 500 draws.
+
+```{r}
+null_curry %>%
+  visualize() +
+   shade_pvalue(obs_stat = obs_stat_curry,
+               direction = "both")
+```
+g. 
+``` {r}
+null  %>% 
+  get_p_value(obs_stat = obs_stat_curry,
+              direction = "both")
+```
+h. We got a p-value of ~0.784. Therefore, our data is consistent with the null hypothesis that Steph Curry has a long range shooting percentage of 0.075, which is the same as the average NBA player. We fail to reject the null hypothesis.

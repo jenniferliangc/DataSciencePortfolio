@@ -1,0 +1,157 @@
+### In this project, I take a data set with 113k rows and 19 variables with information about departing flights in the US and analyze the impact that COVID-19 had on flights and some general statistics.
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(stat20data)
+data(flights)
+```
+
+1. There were 3,680 flights with destination to Portland, Oregon in 2020.
+```{r}
+flights %>%
+  filter(dest == "PDX")
+```
+
+
+2. Computing the average speed of each flight
+```{r}
+mutate(flights, avg_speed = distance / (air_time / 60))
+```
+
+3. Calculating which flight has the longest departure delay. Flight 576, from SFO to PHX, tailnum N191UW had the longest departure delay with a 29hr delay.
+```{r}
+flights %>%
+  mutate(hours_dep_delay = dep_delay / 60) %>%
+  arrange(desc(hours_dep_delay))
+```
+4. How many flights departed from SFO in March of 2020? --> 11,536 flights.
+```{r}
+flights %>%
+  filter(origin == "SFO", month == 3, year == 2020) %>%
+  summarize(n = n())
+```
+
+7. How did COVID-19 affect flight departures in SFO and OAK in 2020? 
+
+We can see from the graph below that after March (peak of the pandemic) flights decreased significantly by more than half of the flights it was previously operating in January, February, and March. 
+```{r} 
+flights %>% 
+  ggplot(aes(x = factor(month), fill = factor(month))) + 
+  geom_bar() + theme(legend.position='none') +
+  labs(title = "Flight Departure Distribution by Month of SFO and OAK in 2020",
+       y = "Number of Flights",
+       x = "Month")
+```
+
+8. Creating a graph to show the distribution of flight departure delays in SFO and OAF in 2020. We can see that the shape of this graph is right-skewed and unimodal. As this graph is non-symmetric, I used the median to calculate the center and the IQR for the spread. We had a median of -4 and an IQR of 6.
+```{r} 
+  ggplot(flights, aes(x = dep_delay)) + 
+  geom_histogram(fill = "tomato", color = "black", binwidth = 5) +
+  labs(title = "Flight Departure Delays in SFO and OAK in 2020",
+       y = "Number of Flights",
+       x = "Departure Delays") +
+  xlim(-100, 300) +
+  ylim(0, 6000)
+```
+
+```{r}
+summarize(flights, median = median(dep_delay, na.rm = TRUE), IQR = IQR(dep_delay, na.rm = TRUE))
+```
+
+9. Did COVID-19 affect departure delays?
+```{r}
+flights %>%
+mutate(before_times = (month <= 3)) %>%
+  ggplot(aes(x = dep_delay)) + 
+  geom_histogram(fill = "tomato", color = "black", binwidth = 5 ) +
+  labs(title = "Flight Departure Delays in SFO and OAK in 2020",
+       y = "Number of Flights",
+       x = "Departure Delays",
+       caption = "TRUE is for Months Jan-March and FALSE for Months April-Dec ") +
+  xlim(-100, 300) +
+  ylim(0, 4000) +
+  facet_wrap(vars(before_times)) 
+```
+I can see that in the months January-March (before the pandemic), the number of flights with departure delays is higher, but the distribution is still pretty much similar. This makes sense though, since in Jan-March there were double the amount of flights than in Apr-Dec, then we can expect more flights to be delayed. Therefore, COVID-19 did not have an affect departure delays.
+
+11. What is the proportion of flights that left on or ahead of schedule in 2020? --> 81.15%
+```{r}
+on_time <- flights %>%
+  filter(dep_delay <= 0) %>% 
+  summarize(n = n())
+
+on_time / count(flights)
+```
+
+12. Is there a relationship between Avg Speed and Distance in flights departing from SFO and OAK?
+```{r}
+mutate(flights, avg_speed = distance / (air_time / 60)) %>%
+  ggplot(aes(x = avg_speed, y = distance)) + 
+  geom_jitter(alpha = 0.2, size = 1, color = "tomato") +
+  labs(title = "Relationship of Avg Speed VS Distance in Departure Flights of SFO and OAK",
+       x = "Average Speed",
+       y = "Distance") +
+  xlim(50, NA) +
+  ylim(0, 1500)
+```
+From the graph above, we can see that the greater the distance a plane is traveling, the greater the average speed. In other words, the further an airplane is traveling, the faster it is going on average. This graph has a positive direction, moderate strength, and slightly curvilinear. Even though the average speed increases as distance increases, I can also see that there are somewhat horizontal lines in the graph. For example, at 500 miles distance, planes have an average speed between 300 to 500 miles/hour. This could be due to many factors, like travel route, weather, wind direction, hour of the flight (if it's day or night), type of aircraft, among others. One of the phenomena that could explain this structure for flights departing from the Bay Area is maybe the weather conditions since in the Bay Area there tends to be a lot of fog and rain or that the planes that don't travel really far (fly within the Bay Area) are not allowed to fly at high speeds since they're traveling among civilization/buildings.
+
+14. Which carrier has the lowest typical departure delay? --> The carrier with the lowest typical departure delay is B6 (-8) and the least variable departure delay is WN or DL (they both have 5.00 IQR).
+```{r}
+flights %>%
+  group_by(carrier) %>%
+  select(dep_delay) %>%
+  summarize(median = median(dep_delay, na.rm = TRUE), IQR = IQR(dep_delay, na.rm = TRUE)) %>%
+  arrange((median), (IQR))
+```
+15. Which month has the highest average departure delay? Which month should I avoid flying if I really don't like delayed flights? The month that has the highest average departure delay is January and the month with highest median departure delay is also January (-3). Of this two measures, median is more reliable for deciding which month to avoid flying to not encounter delayed flight if the data is non-symmetric. If our data is symmetric, the mean would be a more reliable source.
+```{r}
+flights %>%
+  filter(origin == "SFO") %>%
+  group_by(month) %>%
+  select(dep_delay) %>%
+  summarize(mean = mean(dep_delay, na.rm = TRUE), median = median(dep_delay, na.rm = TRUE)) %>%
+  arrange(desc(mean), desc(median))
+```
+
+
+16. Which plane had the highest average speed? 
+
+The plane with tailnum N30913 is the fastest plane in this data set given its average speed of 636.58 miles/hour. It is the Boeing 787-8 Dreamliner by United Airlines 
+```{r}
+flights %>%
+  mutate(avg_speed = distance / (air_time / 60)) %>%
+  select(avg_speed, tailnum) %>%
+  arrange(desc(avg_speed))
+```
+
+
+17. Which day and airline is the best for flying from SFO to ORD?
+
+The day and airline that seems best for flying from SFO to ORD is carrier AA on Tuesday. I defined "best" as the one with the best balance of lowest median and lowest IQR. I first looked at the median column and searched for the one with the least departure delay. In this case, it was -9.0 with an IQR of 7.00. I then searched for the smallest value in the IQR column, and saw that it was 2.50 with a median of -4.5. The second lowest IQR is 4.50 with a median of -7.0. 
+
+Since the lowest median (-9.0) has a high IQR (7.0) and the lowest IQR (2.50) has a high median (-4.5), I think that the best option is AA on Tuesday, which has a median of -7.0 and IQR of 4.50 since -7.00 it's not that far from the lowest median, -9.0, and the IQR, 4.50, is not that far from the lowest IQR, 2.50. 
+
+We could choose the one with the lowest median (-9.00) but since its measure of spread/variability is high (7.00), we have a higher change of taking a flight that is severely delayed. With AA on Tuesday, its median is -7.00 but its IQR is 4.50, which means that its spread/variability is not as dispersed and therefore there is less risk of taking a severely delayed flight. 
+```{r}
+library(lubridate)
+
+flights %>%
+  mutate(day_of_week = wday(ymd(paste(year, month, day, set = "-")), label = T)) %>%
+  filter(dest == "ORD") %>%
+  group_by(carrier, day_of_week) %>%
+  summarize(median = median(dep_delay, na.rm = TRUE), IQR = IQR(dep_delay, na.rm = TRUE))
+```
+18. Is it true that days with more flights have greater delays? --> Yes, it is more likely! In the graph below, we can see that the days that have 350+ flights have a higher mean departure delay than the days with lower quantity of flights.
+```{r}
+flights %>%
+  filter(origin == "SFO") %>%
+  group_by(month, day) %>%
+  summarize(mean_dep_delay = mean(dep_delay, na.rm = TRUE), flight_count = n()) %>%
+  ggplot(aes(x = flight_count, y = mean_dep_delay, color = factor(month))) + 
+  geom_jitter(alpha = 0.4, size = 2) +
+  labs(title = "Days with more flights have more delays",
+       x = "Number of Flights",
+       y = "Mean departure delay (min)")
+```

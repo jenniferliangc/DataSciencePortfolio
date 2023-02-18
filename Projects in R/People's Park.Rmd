@@ -1,0 +1,189 @@
+## Understanding the Context of the Data
+
+In this project, we take a data set provided by the Chancellor's Office at University of California, Berkeley with anonymized responses from 1,250 students who filled out a survey designed to get some data on student's perspective on the ongoing controversy of the People's Park project and summarize the survey responses. 
+
+People's Park is a place with great historical significance and the current debate is whether UC Berkeley, owner of the land, should build student housing in that land or leave it as a sanctuary space for people in need. 
+
+This survey was designed to contrast how much knowledge a student has about the issue with People's Park and whether they support are in support or against construction in People's Park.
+
+Two parameters that the Chancellor's Office is looking to estimate is
+    - What percent of student support building housing at People's Park. 
+    - What percent of students support the project when they are informed about it vs when they are not informed           about the details. 
+
+This survey was designed to collect 1,250 responses from a random sample of 5000 students. The final sample size
+that actually answered the survey is 1,658, resulting in response rate of 33%.
+
+Some things to keep in mind when analyzing the data:
+* We have non-response bias as people who are more interested in the issue are more likely to fill out the survey.
+* Undergraduates students are more likely to want housing than graduate students-- in this case we would have to look at the percentage of undergraduate vs graduate students that answered the survey and their support rate. 
+
+## Part II: Computing on the Data
+
+``` {r import libraries}
+library(tidyverse)
+library(ggplot2)
+library(stat20data)
+data(ppk)
+```
+
+
+1. First, we summarized what students think should be UC Berkeley's highest priority.
+
+This graph shows that about 460 (~27%) of the students who answered the survey think that "Increase student housing" should be UC Berkeley's highest priority.
+``` {r}
+ggplot(ppk, aes(fill = factor(Q9_1), x = factor(Q9_1))) + 
+    geom_bar()+
+    labs(title = "How many students think that increasing student housing should be UC Berkeley's
+        highest priority?",
+       y = "Count",
+       x = "Importance Scale",
+       caption = "1 is highest priotity, 6 is lowest priority")
+```
+
+The following bar graph shows that about 450 students think that improving on-campus facilities should be UC Berkeley's 2nd highest priority. We also have a very small percentage of students who think that this should be UCB's lowest priority.
+``` {r}
+ggplot(ppk, aes(fill = factor(Q9_2), x = factor(Q9_2))) + 
+    geom_bar()+
+    labs(title = "How many students think that improving on-campus facilities should be UC Berkeley's
+        highest priority?",
+       y = "Count",
+       x = "Importance Scale",
+       caption = "1 is highest priotity, 6 is lowest priority")
+```
+
+The graph below shows that about 390 students think that investing in the community and social causes should be UC Berkeley's 4th highest priority and about 380 students think it should be their 5th priority.
+
+Adding these two, 390 + 380 = 770, we could generally say that about 46% (770 / 1,658) think that investing in the community and social issues should be in UC Berkeley's middle to low priority (priority 4th and 5th).
+``` {r}
+ggplot(ppk, aes(fill = factor(Q9_5), x = factor(Q9_5))) + 
+    geom_bar()+
+    labs(title = "How many students think that investing in the community and social causes should
+    be UC Berkeley's highest priority?",
+       y = "Count",
+       x = "Importance Scale",
+       caption = "1 is highest priotity, 6 is lowest priority")
+```
+
+The following graph shows that 875 students (~52%) think that it's very important for UCB to provide more student housing. 500 of the students (30%), think that it's somewhat important. 125 students (7.5%) said that this issue is neither important nor unimportant.
+
+Generalizing this information, we can say that about 82% of students think that UCB should provide more student housing, 7.5% of students don't think this issue is important nor unimportant, and about 10.5% of the students who answered this survey think that it's very or somewhat unimportant to provide more student housing.
+```{r} 
+mutate(ppk, order = fct_relevel(Q10, 
+            "Very important", "Somewhat important", "Neither important nor unimportant", 
+            "Somewhat unimportant", "Very unimportant")) %>%
+ggplot(aes(fill = factor(Q10), y = order)) +
+  geom_bar() + scale_y_discrete(na.translate = FALSE) +
+  labs(title = "How important is it for UC Berkeley to provide more
+       student housing?", 
+       y = "Importance Rate",x = "Count")
+```
+
+2. We are now interested in seeing how student's support changed after reading a small summary about UC Berkeley's student housing plan in People's Park.
+
+Before students were informed about the plans for People's Park, the support rate was about 33% (I summed all the votes for "somewhat support", "strongly support", and "very strongly support" and divided by the total of students who answered the survey. T
+
+The second graph shows that after being informed, the support rate increased to about 64%. Subsequently, in the second graph the votes for "neither support nor oppose" all the way to "very strongly oppose" decreased significantly.
+``` {r}
+mutate(ppk, order = fct_relevel(Q18_words, 
+            "Very strongly support", "Strongly support", "Somewhat support", 
+            "Neither support nor oppose", "Somewhat oppose", "Strongly oppose", "Very strongly oppose")) %>%
+  ggplot(aes(fill = factor(Q18_words), y = order)) +
+  geom_bar() + scale_y_discrete(na.translate = FALSE) +
+  labs(title = "Students' support BEFORE being informed about the plans
+       for People's Park", 
+       y = "Support rate", x = "Count")
+```
+
+``` {r}
+mutate(ppk, order = fct_relevel(Q21_words, 
+            "Very strongly support", "Strongly support", "Somewhat support", 
+            "Neither support nor oppose", "Somewhat oppose", "Strongly oppose", "Very strongly oppose")) %>%
+  ggplot(aes(fill = factor(Q21_words), y = order)) +
+  geom_bar() + scale_y_discrete(na.translate = FALSE) +
+  labs(title = "Students' support AFTER being informed about the plans
+       for People's Park", 
+       y = "Support rate", x = "Count")
+```
+
+3. What is the support by grade before being presented the information about UC Berkeley's housing plans in People's Park?
+
+53% of freshmen, 61% of sophomores, 53% of juniors, 49% of seniors, and 61% of graduate/professional students supported the People's Park Project before being presented with the information.
+``` {r}
+data(ppk)
+ppk_prop <- mutate(ppk, support_before = (Q18 <= 3)) %>%
+  group_by(Q1) %>%
+  summarize(average = mean(support_before, na.rm = TRUE))
+
+ppk_prop
+```
+
+4. What is the average change in support AFTER reading the information? 
+
+The average change in support after reading the information is -0.48 for freshman, -0.29 for sophomores, -0.21 for juniors, -0.31 for seniors and -0.11 for graduate/professional students. For the column Q18, there are a lot of NAs and column Q21 does not have NAs, which could significantly skew our data.
+``` {r}
+mutate(ppk, change_in_support = (Q21 - Q18)) %>%
+  group_by(Q1) %>%
+  summarize (mean = mean (change_in_support, na.rm = TRUE))
+```
+
+5. In the next two graphs, I wanted to visualize how much student's concern about taking away space for unhoused people changed after being informed of People's Park Project. 
+
+From a simple glance, we can see that in graph 2 (after being informed) the bar for "0" increased and went above bar "1" so we would assume that student's worry about taking away space from unhoused people decreased. However, in Graph 1 (before being informed), the count/y-axis is about 450, and in Graph 2, there is a count of about 800, which is almost double the count of Graph 1. This tells us that our data for column Q20_2/graph 1 is not complete in comparison to column Q22_2/graph2 and therefore we can not really make an accurate conclusion from this data.
+```{r}
+ggplot(ppk, aes(fill = factor(Q20_2), x = factor(Q20_2))) +
+  geom_bar() + scale_x_discrete(na.translate = FALSE) +
+  labs(title = "GRAPH 1: Students' worry about taking away important space for unhoused
+  people BEFORE being informed about People's Park Project", 
+       y = "Count", x = "Worry", caption = "0 = not worry, 1 = worry")
+```
+
+```{r}
+ggplot(ppk, aes(fill = factor(Q22_2), x = factor(Q22_2))) +
+  geom_bar() + scale_x_discrete(na.translate = FALSE) +
+  labs(title = "GRAPH 2: Students' worry about taking away important space for unhoused
+  people AFTER being informed about People's Park Project", 
+       y = "Count", x = "Worry", caption = "0 = not worry, 1 = worry")
+```
+6. Now, we want to compute a confidence interval for student's rating of the condition of People's Park.
+
+Our confidence interval has a lower and upper bound of 2, which means that out of the 500 bootstraps performed, 95% of them has a median of 2. In other words, 95% of the time we perform this survey, the median of the condition of People's Park is 2 according to student's answer.
+```{r}
+library (infer, warn.conflicts = FALSE)
+```
+
+``` {r}
+ppk %>%
+  specify (response = Q15_1) %>%
+  generate(reps = 500,
+           type = "bootstrap") %>%
+  calculate(stat = "median") %>%
+  get_ci(level = .95)
+```
+
+
+7. What proportion of students support People's Park Project BEFORE reading about UC Berkeley's housing plans?
+
+Our confidence interval has a lower bound of 0.317 and upper bound of 0.362, which means that out of the 500 bootstraps performed, 95% of the bootstraps performed has a proportion of students in between this range who support People's Park Project before reading the information about UC Berkeley's housing plans. 
+``` {r}
+ppk %>%
+  mutate(support_before = (Q18 %in% c(1, 2, 3))) %>%
+  specify (response = support_before,
+           success = "TRUE") %>%
+  generate(reps = 500,
+           type = "bootstrap") %>%
+  calculate(stat = "prop") %>%
+  get_ci(level = .95)
+```
+
+
+8. Did student's support increased or decreased AFTER reading about UC Berkeley's housing plans at People's Park?
+
+The confidence interval is between -3 and 2, which means that out of the 500 bootstrap performed, in 95% of them, the overall change in support of the Project after being exposed to the information on page 14 had a change between -3 and 2. The interval does contain 0, which means that the Chancellor's Office can not be fully certain whether students' support increased or decreased. If it were a positive confidence interval, for example 2 to 4, then we can be sure students' support increased for the project. If we have a negative confidence interval, then the Chancellor's Office can be sure that the students' support for the project decreased.
+``` {r}
+mutate(ppk, change_in_support = (Q21 - Q18)) %>%
+  specify (response = change_in_support) %>%
+  generate(reps = 500,
+           type = "bootstrap") %>%
+  get_ci(level = .95)
+```
+

@@ -1,0 +1,88 @@
+## Taking a baseball dataset with about 110k rows and 22 variables, I perform exploratory data analysis to create a linear model that predicts Wins based on different independent variables.
+
+```{r, message = FALSE, warning = FALSE}
+library(tidyverse)
+library(stat20data)
+library(ggplot2)
+library(infer)
+library(dplyr)
+library(Lahman)
+data(Teams)
+data(Batting)
+```
+
+### 1. Filter the dataset: I'm only focusing on the data after the year 2000 since I'm interested in analyzing the last ~20 years. The dimensions for this filtered dataset is 600x48, 600 rows and 48 columns. 
+```{r, message = FALSE, warning = FALSE}
+filtered_teams <- Teams %>%
+  filter(yearID >= 2000 & G>60)
+```
+
+### 2. Histogram for the distribution of wins: this plot is unimodal and normally distributed. 
+```{r, message = FALSE, warning = FALSE}
+filtered_teams %>%
+  ggplot(aes(x = W)) +
+  geom_histogram()
+```
+### 3. Relationship between runs and wins
+
+The relationship between runs and wins seem to be linear, positive, and with moderate strength. There are a few data points that could potentially be considered outliers but they aren't really that far from the rest of the data points, so I wouldn't consider them outliers.
+
+```{r, message = FALSE, warning = FALSE}
+filtered_teams %>%
+  ggplot(aes(x = R, y = W)) +
+  geom_point()
+```
+### 4. Graphing the relationship between "Opponents runs scored" and "Wins"
+
+The relationship of this plot is linear, negative, and with high strength. For the relationship between runs and wins, a higher number of runs indicates a higher number of wins. In contrast, for the relationship between opponent's runs (RA) and wins, the lower the number of opponent's runs scored, the higher the number of wins.
+
+```{r, message = FALSE, warning = FALSE}
+filtered_teams %>%
+  ggplot(aes(x = RA, y = W)) +
+  geom_point()
+```
+### 5. Creating a linear model to predict Wins (W) using Runs (R).
+
+Equation for the linear model: y^ = 0.108R. The R^2 value is 0.9846 and the adjusted R^2 value is 0.9846. The slope tells us that for every additional run a team scores, we expect for there to be an increase of 0.1089 of wins. 
+
+```{r, message = FALSE, warning = FALSE}
+m1 <- lm(W ~ R - 1, data = filtered_teams)
+summary(m1)
+coefficients(m1)
+```
+### 6. Predicting Wins using the model we built in (5).
+
+The average number of season runs is 740.3 and of wins is 80.97. Our model predicted that a team who scored an average number of runs would win 80.7 games, a team that scored 600 runs would win 65.41 games and with 850 runs would win 92.66 games.
+
+```{r, message = FALSE, warning = FALSE}
+filtered_teams %>%
+  summarize(mean(W), mean(R))
+
+predict(m1, data.frame(R = c(740.6683, 600, 850)))
+```
+
+
+
+### 7. Building a linear model using Runs (R) and Opponent Runs Scored (RA) to predict Wins (W)
+
+Equation: y^ = 0.1582R - 0.049RA. 
+The R^2 value is 0.9894 and the adjusted R^2 is 0.9893. 
+The slope tells us that for every additional run, we expect there to be an increase of 0.1582 wins and a decrease of -0.0497 wins for every additional opponents runs scored. The simple linear regression from (5) gave us an R^2 value of 0.9846, and with the linear model from this question, we got an R^2 value of 0.9892. Since in this model we are using two variables and therefore have more information to draw from and got a higher R^2 value, it seems like this model is better at predicting wins than the model from (5).
+```{r, message = FALSE, warning = FALSE}
+m1 <- lm(W ~ -1 + R + RA, data = filtered_teams)
+summary(m1)
+coefficients(m1)
+```
+
+
+### 8. Building another model using Hits Allowed (HA) and Homeruns Allowed (HRA) to predict Wins (W)
+The R^2 value we got is 0.966 and the adjusted R^2 value is 0.9645. I don't think this model predicts wins better as we got a lower R^2 value than oue two previous models.
+
+```{r, message = FALSE, warning = FALSE}
+m1 <- lm(W ~ HA + HRA - 1, data = filtered_teams)
+summary(m1)
+coefficients(m1)
+
+```
+
+### Final note: although our models are good at predicting Wins based on the chosen independent variables, it is not reasonable to draw causal conclusion from these models as our data frame comes from observational data. If this data came from an experimental study, then we would be able to draw causal conclusions.

@@ -1,0 +1,109 @@
+## In this project, we take a public dataset that has agreggated data about each of Brazil's cities such as population, gdp, number of cars, etc. to create a linear model that predicts the population for each city.
+
+```{r, message = FALSE, warning = FALSE}
+library(tidyverse)
+library(stat20data)
+library(ggplot2)
+library(infer)
+library(dplyr)
+dic <- read_csv("https://www.dropbox.com/s/pwbvn51x4o1fvh9/data_dic.csv?dl=1")
+cit <- read_csv("https://www.dropbox.com/s/vx3tmh3ybwtbqk7/cities.csv?dl=1")
+```
+
+## Part I: Exploratory Data Analysis
+
+### 1. Visualizing the relationship between number of companies and population in each city.
+
+These two variables seem to be linear, positive and with moderate/strong strength.
+```{r, message = FALSE, warning = FALSE}
+cit <- cit %>% 
+  mutate(log_pop = log10(pop), 
+         log_comp = log10(comp))
+
+ggplot(cit, aes(x = log_pop, y = log_comp)) +
+  geom_point()
+```
+ 
+
+### 2. Looking at the relationship between cars and population.
+
+The relationship between these two variables seem to be positive, linear, and with moderate strength. 
+
+```{r, message = FALSE, warning = FALSE}
+cit <- cit %>% 
+  mutate(log_pop = log10(pop), 
+         log_cars = log10(cars))
+
+ggplot(cit, aes(x = log_pop, y = log_cars)) +
+  geom_point()
+```
+
+### 3. Computing the correlation coefficient between population and number of companies.
+```{r, message = FALSE, warning = FALSE}
+cor(cit$log_pop,cit$log_comp)
+```
+
+### 4. Computing the correlation coefficient between population and number of cars.
+```{r}
+cor(cit$log_pop,cit$log_cars)
+```
+
+## Part II: Creating Linear Models using lm()
+
+### 5. Building a model to predict log(population) using log(comp) as the independent variable.
+```{r, message = FALSE, warnig = FALSE}
+m1 <- lm(log_pop ~ log_comp, data = cit)
+coefficients(m1)
+```
+
+```{r, message = FALSE, warnig = FALSE}
+cit_new <- read_csv("https://www.dropbox.com/s/37cafpcj3lrenke/cit_new.csv?dl=1")
+cit_new <- cit_new %>%
+mutate(log_pop = log10(pop),
+log_comp = log10(comp))
+```
+
+### 6. I'm using the model I built to predict the values for log_pop.
+
+The predictions are very similar to the true vale. For city 1 we got a prediction of 3.47 and the true value was 3.45. We got similar numbers for the other cities as well.
+```{r}
+predict(m1, cit_new)
+cit_new %>%
+  select(log_pop)
+```
+
+### 7. Now, I'm creating another linear model, but now I'm using log area to predict log population.
+
+```{r, message = FALSE, warning = FALSE}
+cit <- cit %>%
+  mutate(log_area = log10(area))
+
+cit_new <- cit_new %>%
+  mutate(log_area = log10(area))
+
+m2 <- lm(log_pop ~ log_area, data = cit)
+coefficients(m2)
+
+predict(m2, cit_new)
+```
+
+### 8. Lastly, I'll create a model that predicts log population usinf log car and analyze the result.
+
+Since out of the 5 cities, 2 are almost in the line, 2 are above the line (but one is extrapolation) and 1 is under the prediction line, we can say that the prediction that my model made did not overestimate nor underestimate as half of the points reside in the line. For the magnitude of error, 4 out of the 5 points reside close to the prediction line so I'd say that the magnitude of error is small. This prediction involes both, intrapolation and extrapolation as we can see in the top right corner that we have 1 red dot that is far away from the rest of the data.
+
+```{r, message = FALSE, warning = FALSE}
+cit <- cit %>% 
+  mutate(log_pop = log10(pop), 
+         log_car = log10(cars))
+
+cit_new <- cit_new %>%
+  mutate(log_car = log10(cars))
+
+ggplot(cit, aes(x = log_car, y = log_pop)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(y = "log(Population)",
+  x = "log(Number of Cars)") +
+  geom_point(data = cit_new, aes(x=log_car, y = log_pop),
+  color = "tomato")
+```
