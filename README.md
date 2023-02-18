@@ -1,6 +1,6 @@
 # DataSciencePortfolio
 
-A collection of Data Science and Data Analytic projects to demonstrate my skill set.
+A collection of Data Science and Data Analysis projects to demonstrate my skill set.
 
 ## Contents
 * ### _Machine Learning_
