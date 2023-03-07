@@ -18,6 +18,9 @@ A collection of Data Science and Data Analysis projects to demonstrate my skill 
     * **Text Analysis Using Twitter**: Produced tweets' sentiment score using VADER lexicon to predict how positive or negative a tweet is
     * **Tuscan RFM Marketing Analysis**: Took a merchant's dataset and split customers into deciles to identify most profitable customers based on their recency, frequency and monetary values. Calculated gross profit and ROI across all customer segments
    
+  **Using SQL**
+    * **IMDb Analysis**: Used SQL to analyze an IMDb dataset. It contains 4 tables with over 121k rows and 23 variables. Leveraged advance SQL commands such as JOIN, WITH, and CASE to get information from multiple tables and answer questions such as "Who are the top 10 most prolific movie actors?" and "How does film length relate to ratings?"
+  
   **Using R:**
     * **Flights**: Took a data set with 113k rows and 19 variables with information about departing flights in the US and analyze the impact that COVID-19 had on flights and some general statistics
     * **People's Park**: Used a data set provided by the Chancellor's Office at University of California, Berkeley with anonymized responses from 1,250 students from a survey designed to get some data on student's perspective on the ongoing controversy of the People's Park project and summarized the survey responses 
